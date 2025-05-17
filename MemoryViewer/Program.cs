@@ -20,9 +20,32 @@ namespace nl
         [DllImport("kernel32.dll")]
         static extern bool CloseHandle(IntPtr hObject);
 
+        private static int ReadInt32(IntPtr hProcess, long address)
+        {
+            byte[] buffer = new byte[4];
+            int readLength;
+
+            ReadProcessMemory(hProcess, (IntPtr)address, buffer, buffer.Length, out readLength);
+
+            if (buffer.Length == readLength)
+                return BitConverter.ToInt32(buffer);
+            else
+                return 0;
+        }
+
+        private static bool WriteInt32(IntPtr hProcess, long address, int value)
+        {
+            byte[] buffer = BitConverter.GetBytes(value);
+            int writtenLength;
+
+            WriteProcessMemory(hProcess, (IntPtr)address, buffer, buffer.Length, out writtenLength);
+
+            return buffer.Length == writtenLength;
+        }
+
         private static void Main(string[] args)
         {
-            Process[] processes = Process.GetProcessesByName("CalculatorApp");
+            Process[] processes = Process.GetProcessesByName("TowerDefenceAlpha");
 
             if (processes.Length == 0)
             {
@@ -30,16 +53,24 @@ namespace nl
                 return;
             }
 
-            string directory = @"C:\Programming\CSharp\MemoryViewer\pages";
-            ProcMemDump.Dump(processes[0], directory);
+            // open handle
+            IntPtr hProcess = OpenProcess(PROCESS_ALL_ACCESS, false, processes[0].Id);
+            long targetAddress = 0x204EE374DC4;
 
-            // write values
-            // byte[] newValue = new byte[] { 0x90, 0x90 };
-            // int bytesWritten;
-            // WriteProcessMemory(hProcess, targetAddress, newValue, newValue.Length, out bytesWritten);
+            // read (1)
+            int rdValue = ReadInt32(hProcess, targetAddress);
+            Console.WriteLine($"Read Value == {rdValue}");
+
+            // write (1)
+            int wrValue = 150000;
+            WriteInt32(hProcess, targetAddress, wrValue);
+
+            // read (2)
+            rdValue = ReadInt32((IntPtr)hProcess, targetAddress);
+            Console.WriteLine($"Read Value == {rdValue}");
 
             // close handle
-            // CloseHandle(hProcess);
+            CloseHandle(hProcess);
         }
     }
 }
