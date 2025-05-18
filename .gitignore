@@ -2,3 +2,6 @@ MemoryViewer/bin
 MemoryViewer/obj
 MemoryViewer/pages
 MemoryViewer/.vs
+
+MemoryScanner/x64
+MemoryScanner/.vs
