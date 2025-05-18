@@ -3,5 +3,6 @@ MemoryViewer/obj
 MemoryViewer/pages
 MemoryViewer/.vs
 
-MemoryScanner/x64
 MemoryScanner/.vs
+MemoryScanner/x64/Debug
+MemoryScanner/MemoryScanner/x64/Debug
