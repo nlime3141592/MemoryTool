@@ -181,7 +181,20 @@ void printQueryAddresses(SIZE_T length)
 	}
 }
 
+void ProcMemInfo(int pid);
+
 int main()
+{
+	int pid = 2484;
+
+	SYSTEM_INFO sysinfo;
+
+	GetSystemInfo(&sysinfo);
+
+	printf("dwPageSize == %d\n", sysinfo.dwPageSize);
+}
+
+int main1()
 {
 	QUERY_ADDRESS = (PVOID64*)malloc(sizeof(PVOID64) * ALLOC_SIZE);
 
