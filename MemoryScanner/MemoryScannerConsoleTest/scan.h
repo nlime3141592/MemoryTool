@@ -17,5 +17,5 @@ typedef union _PrimitiveData
 	DOUBLE float64;
 } PrimitiveData;
 
-SIZE_T QueryNew(HANDLE hProcess, LPCVOID data, SIZE_T dataLength, LPCVOID addrBuffer, LPCVOID rdBuffer, SIZE_T pageSize);
-SIZE_T QueryContinue(HANDLE hProcess, LPCVOID data, SIZE_T dataLength, LPCVOID addrBuffer, SIZE_T addrCount, LPCVOID rdBuffer, SIZE_T pageSize);
+SIZE_T QueryNew(HANDLE hProcess, LPCVOID data, SIZE_T dataLength);
+SIZE_T QueryContinue(HANDLE hProcess, LPCVOID data, SIZE_T dataLength);

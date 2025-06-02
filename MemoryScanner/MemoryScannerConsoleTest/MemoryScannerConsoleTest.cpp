@@ -186,7 +186,7 @@ void ProcMemInfo(int pid);
 
 #include "scan.h"
 
-int main1()
+int main()
 {
 	//int pid = 24024;
 
@@ -194,6 +194,8 @@ int main1()
 	//GetSystemInfo(&sysinfo);
 	//printf("dwPageSize == %d\n", sysinfo.dwPageSize);
 
+	/*QUERY_ADDRESS = (PVOID64*)malloc(sizeof(PVOID64) * ALLOC_SIZE);
+	RD_BUFFER = (PVOID64*)malloc(sizeof(PVOID64) * ALLOC_SIZE);*/
 
 	int pid = 0;
 	int size = 0;
@@ -235,7 +237,7 @@ int main1()
 		case 'S':
 			printf("Enter the Value: ");
 			input((ScanData*)(&data), size, sign, endian);
-			length = QueryNew(hProcess, (ScanData*)(&data), size, QUERY_ADDRESS, RD_BUFFER, 4096);
+			length = QueryNew(hProcess, (ScanData*)(&data), size);
 			//length = queryNew(hProcess, (ScanData*)(&data), size);
 			printQueryAddresses(length);
 			printf("Qnery New: %llu\n", length);
@@ -243,7 +245,7 @@ int main1()
 		case 's':
 			printf("Enter the Value: ");
 			input((ScanData*)(&data), size, sign, endian);
-			length = QueryContinue(hProcess, (ScanData*)(&data), size, QUERY_ADDRESS, length, RD_BUFFER, 4096);
+			length = QueryContinue(hProcess, (ScanData*)(&data), size);
 			//length = queryContinue(hProcess, (ScanData*)(&data), size, length);
 			printQueryAddresses(length);
 			printf("Qnery Continue: %llu\n", length);
@@ -260,10 +262,12 @@ int main1()
 		}
 	}
 
+	free(QUERY_ADDRESS);
+	free(RD_BUFFER);
 	return 0;
 }
 
-int main()
+int main1()
 {
 	QUERY_ADDRESS = (PVOID64*)malloc(sizeof(PVOID64) * ALLOC_SIZE);
 

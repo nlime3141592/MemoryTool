@@ -1,6 +1,28 @@
 #include "scan.h"
+#include <iostream>
 
 static PBYTE kmp_pi;
+
+static SIZE_T ADR_BUFFER_SIZE = 0;
+static SIZE_T ADR_BUFFER_COUNT = 0;
+static LPVOID* ADR_BUFFER = NULL;
+
+static SIZE_T MEM_BUFFER_SIZE = 0;
+static LPVOID* MEM_BUFFER = NULL;
+
+static SIZE_T AppendBuffer(LPVOID** src, SIZE_T* prevSize, SIZE_T nextSize)
+{
+	if (nextSize == 0)
+		return *prevSize;
+
+	LPVOID* resized = (LPVOID*)realloc(*src, sizeof(LPVOID) * nextSize);
+	if (!resized)
+		return *prevSize;
+
+	*src = resized;
+	*prevSize = nextSize;
+	return nextSize;
+}
 
 static PBYTE KMP_PI(LPCVOID data, SIZE_T dataLength)
 {
@@ -40,23 +62,6 @@ static void ChangeEndian(PrimitiveData* data, SIZE_T dataLength)
 	}
 }
 
-static int Compare(PrimitiveData* a, PrimitiveData* b, SIZE_T dataLength)
-{
-	switch (dataLength)
-	{
-	case 1:
-		return a->udata8 == b->udata8;
-	case 2:
-		return a->udata16 == b->udata16;
-	case 4:
-		return a->udata32 == b->udata32;
-	case 8:
-		return a->udata64 == b->udata64;
-	default:
-		return 0;
-	}
-}
-
 static SIZE_T KMP(LPCVOID data, SIZE_T dataLength, SIZE_T idxRdBuffer, LPCVOID rdBuffer, SIZE_T rdBufferLength, LPCVOID pi)
 {
 	if (rdBufferLength - idxRdBuffer < dataLength)
@@ -76,12 +81,32 @@ static SIZE_T KMP(LPCVOID data, SIZE_T dataLength, SIZE_T idxRdBuffer, LPCVOID r
 	return idxRdBuffer + i;
 }
 
-SIZE_T QueryNew(HANDLE hProcess, LPCVOID data, SIZE_T dataLength, LPCVOID addrBuffer, LPCVOID rdBuffer, SIZE_T pageSize)
+static int Compare(PrimitiveData* a, PrimitiveData* b, SIZE_T dataLength)
+{
+	switch (dataLength)
+	{
+	case 1:
+		return a->udata8 == b->udata8;
+	case 2:
+		return a->udata16 == b->udata16;
+	case 4:
+		return a->udata32 == b->udata32;
+	case 8:
+		return a->udata64 == b->udata64;
+	default:
+		return 0;
+	}
+}
+
+SIZE_T QueryNew(HANDLE hProcess, LPCVOID data, SIZE_T dataLength)
 {
 	MEMORY_BASIC_INFORMATION mbi;
 	LPCVOID baseAddr = 0;
-	SIZE_T matchedCount = 0;
+	SIZE_T rdBufferLength;
+	SIZE_T i;
 
+	ADR_BUFFER_COUNT = 0;
+	
 	while (VirtualQueryEx(hProcess, baseAddr, &mbi, sizeof(mbi)) == sizeof(mbi))
 	{
 		if (mbi.State != MEM_COMMIT ||
@@ -91,46 +116,66 @@ SIZE_T QueryNew(HANDLE hProcess, LPCVOID data, SIZE_T dataLength, LPCVOID addrBu
 			continue;
 		}
 
-		SIZE_T rdBufferLength;
-		ReadProcessMemory(hProcess, mbi.BaseAddress, (LPVOID)rdBuffer, mbi.RegionSize, &rdBufferLength);
-		
-		SIZE_T i = 0;
+		if (MEM_BUFFER_SIZE < mbi.RegionSize)
+			AppendBuffer(&MEM_BUFFER, &MEM_BUFFER_SIZE, mbi.RegionSize);
 
+		printf("Query for Base Address #%p (Region Size == %llu)\n", mbi.BaseAddress, mbi.RegionSize);
+		ReadProcessMemory(hProcess, mbi.BaseAddress, MEM_BUFFER, mbi.RegionSize, &rdBufferLength);
+		
 		for (i = 0; i < rdBufferLength; i += dataLength)
 		{
-			if (!Compare((PrimitiveData*)((PBYTE)rdBuffer + i), (PrimitiveData*)data, dataLength))
+			if (!Compare((PrimitiveData*)((PBYTE)MEM_BUFFER + i), (PrimitiveData*)data, dataLength))
 				continue;
 
-			((PVOID64*)addrBuffer)[matchedCount++] = ((PBYTE)rdBuffer + i);
+			if (ADR_BUFFER_COUNT == ADR_BUFFER_SIZE)
+				AppendBuffer(&ADR_BUFFER, &ADR_BUFFER_SIZE, ADR_BUFFER_COUNT * 2);
+
+			ADR_BUFFER[ADR_BUFFER_COUNT++] = ((PBYTE)mbi.BaseAddress + i);
 		}
+
+		baseAddr = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
 	}
 
-	return matchedCount;
+	return ADR_BUFFER_COUNT;
 }
 
-SIZE_T QueryContinue(HANDLE hProcess, LPCVOID data, SIZE_T dataLength, LPCVOID addrBuffer, SIZE_T addrCount, LPCVOID rdBuffer, SIZE_T pageSize)
+SIZE_T QueryContinue(HANDLE hProcess, LPCVOID data, SIZE_T dataLength)
 {
 	MEMORY_BASIC_INFORMATION mbi;
 	LPCVOID baseAddr = 0;
-	SIZE_T matchedCount = 0;
+	SIZE_T shouldRead = 0;
+	SIZE_T rdBufferLength;
+	SIZE_T i;
+	SIZE_T j;
+	SIZE_T n = ADR_BUFFER_COUNT;
+
+	ADR_BUFFER_COUNT = 0;
 
 	VirtualQueryEx(hProcess, baseAddr, &mbi, sizeof(mbi));
 
-	for (SIZE_T i = 0; i < addrCount; ++i)
+	for (SIZE_T i = 0; i < n; ++i)
 	{
-		while ((PBYTE)mbi.BaseAddress + mbi.RegionSize < ((LPCVOID*)addrBuffer)[i])
-			VirtualQueryEx(hProcess, ((LPCVOID*)addrBuffer)[i], &mbi, sizeof(mbi));
+		while ((PBYTE)mbi.BaseAddress + mbi.RegionSize < ADR_BUFFER[i])
+		{
+			baseAddr = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
+			VirtualQueryEx(hProcess, baseAddr, &mbi, sizeof(mbi));
+			shouldRead = 1;
+		}
 
-		SIZE_T rdBufferLength;
-		ReadProcessMemory(hProcess, mbi.BaseAddress, (LPVOID)rdBuffer, mbi.RegionSize, &rdBufferLength);
+		if (shouldRead != 0)
+		{
+			ReadProcessMemory(hProcess, mbi.BaseAddress, MEM_BUFFER, mbi.RegionSize, &rdBufferLength);
+			shouldRead = 0;
+		}
 
-		SIZE_T j = (SIZE_T)((PVOID64*)addrBuffer)[i] - (SIZE_T)mbi.BaseAddress;
+		j = (PBYTE)ADR_BUFFER[i] - mbi.BaseAddress;
 
-		if (!Compare((PrimitiveData*)((PVOID64*)addrBuffer + j), (PrimitiveData*)data, dataLength))
+		printf("Query for Address #%p\n", ADR_BUFFER[i]);
+		if (!Compare((PrimitiveData*)((PBYTE)MEM_BUFFER + j), (PrimitiveData*)data, dataLength))
 			continue;
 
-		((PVOID64*)addrBuffer)[matchedCount++] = ((PVOID64*)addrBuffer)[i];
+		ADR_BUFFER[ADR_BUFFER_COUNT++] = ADR_BUFFER[i];
 	}
 
-	return matchedCount;
+	return ADR_BUFFER_COUNT;
 }
