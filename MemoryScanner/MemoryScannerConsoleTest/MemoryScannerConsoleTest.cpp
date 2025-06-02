@@ -10,6 +10,7 @@
 #define TEST_LPCNT 15
 
 PVOID64* QUERY_ADDRESS;
+PVOID64* RD_BUFFER;
 
 void VQueryEX(int pid);
 
@@ -183,18 +184,86 @@ void printQueryAddresses(SIZE_T length)
 
 void ProcMemInfo(int pid);
 
-int main()
-{
-	int pid = 2484;
-
-	SYSTEM_INFO sysinfo;
-
-	GetSystemInfo(&sysinfo);
-
-	printf("dwPageSize == %d\n", sysinfo.dwPageSize);
-}
+#include "scan.h"
 
 int main1()
+{
+	//int pid = 24024;
+
+	//SYSTEM_INFO sysinfo;
+	//GetSystemInfo(&sysinfo);
+	//printf("dwPageSize == %d\n", sysinfo.dwPageSize);
+
+
+	int pid = 0;
+	int size = 0;
+	int sign = 0;
+	int endian = 0;
+	char cmd = '\0';
+
+	printf("Enter the PID: ");
+	scanf("%d", &pid);
+
+	printf("Enter the Data Size (1, 2, 4, 8): ");
+	scanf("%d", &size);
+
+	printf("Enter the Sign (0 == positive, 1 == negative): ");
+	scanf("%d", &endian);
+
+	printf("Enter the Endian (0 == little, 1 == big): ");
+	scanf("%d", &endian);
+
+	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+
+	PrimitiveData data;
+
+	LPCVOID address;
+	SIZE_T length;
+
+	while (cmd != 'q' && cmd != 'Q')
+	{
+		printf("Enter the Commands::\n");
+		printf("  S : New Scan\n");
+		printf("  s : Scan Continue\n");
+		printf("  m : Modify Memory\n");
+		printf("  q, Q: Quit\n");
+
+		scanf("%c", &cmd);
+
+		switch (cmd)
+		{
+		case 'S':
+			printf("Enter the Value: ");
+			input((ScanData*)(&data), size, sign, endian);
+			length = QueryNew(hProcess, (ScanData*)(&data), size, QUERY_ADDRESS, RD_BUFFER, 4096);
+			//length = queryNew(hProcess, (ScanData*)(&data), size);
+			printQueryAddresses(length);
+			printf("Qnery New: %llu\n", length);
+			break;
+		case 's':
+			printf("Enter the Value: ");
+			input((ScanData*)(&data), size, sign, endian);
+			length = QueryContinue(hProcess, (ScanData*)(&data), size, QUERY_ADDRESS, length, RD_BUFFER, 4096);
+			//length = queryContinue(hProcess, (ScanData*)(&data), size, length);
+			printQueryAddresses(length);
+			printf("Qnery Continue: %llu\n", length);
+			break;
+		case 'm':
+			printf("Enter the Memory Address: ");
+			scanf("%llx", &address);
+			printf("Enter the Value: ");
+			input((ScanData*)(&data), size, sign, endian);
+			WriteProcessMemory(hProcess, (LPVOID)address, (LPCVOID)data.bytes, size, NULL);
+			printf("Modifying OK\n");
+		default:
+			break;
+		}
+	}
+
+	return 0;
+}
+
+int main()
 {
 	QUERY_ADDRESS = (PVOID64*)malloc(sizeof(PVOID64) * ALLOC_SIZE);
 
