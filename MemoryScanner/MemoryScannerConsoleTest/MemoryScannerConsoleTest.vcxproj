@@ -131,10 +131,12 @@
     <ClCompile Include="MemoryScannerConsoleTest.cpp" />
     <ClCompile Include="ProcMemInfo.cpp" />
     <ClCompile Include="ProcMemSpace.cpp" />
+    <ClCompile Include="query.cpp" />
     <ClCompile Include="scan.cpp" />
     <ClCompile Include="VQueryEX.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="query.h" />
     <ClInclude Include="scan.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

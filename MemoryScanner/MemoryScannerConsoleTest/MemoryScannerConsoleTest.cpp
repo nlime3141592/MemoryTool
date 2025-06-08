@@ -42,47 +42,44 @@ void toBigEndian(ScanData* data, int size)
 	}
 }
 
-int input(ScanData* data, int size, int sign, int endian)
+int input(void* data, int size, int sign)
 {
 	int usize = size;
 
 	if (sign != 0)
 		size = -size;
 
+	ScanData* pdat = (ScanData*)data;
+
 	switch (size)
 	{
 	case 1:
-		scanf("%hhu", &(data->udata8));
-		break;
+		return scanf("%hhu", &pdat->udata8);
 	case 2:
-		scanf("%hu", &(data->udata16));
-		break;
+		return scanf("%hu", &pdat->udata16);
 	case 4:
-		scanf("%u", &(data->udata32));
-		break;
+		return scanf("%u", &pdat->udata32);
 	case 8:
-		scanf("%llu", &(data->udata64));
-		break;
+		return scanf("%llu", &pdat->udata64);
 	case -1:
-		scanf("%hhd", &(data->data8));
-		break;
+		return scanf("%hhd", &pdat->data8);
 	case -2:
-		scanf("%hd", &(data->data16));
-		break;
+		return scanf("%hd", &pdat->data16);
 	case -4:
-		scanf("%d", &(data->data32));
-		break;
+		return scanf("%d", &pdat->data32);
 	case -8:
-		scanf("%lld", &(data->data64));
-		break;
+		return scanf("%lld", &pdat->data64);
 	default:
-		return 0;
+		int wrLength = 0;
+		PBYTE* hexdat = (PBYTE*)data;
+		for (int i = 0; i < size; ++i)
+		{
+			wrLength += scanf("%hhx", hexdat + i);
+		}
+		return wrLength;
 	}
 
-	if (endian != 0)
-		toBigEndian(data, usize);
-
-	return size;
+	return 0;
 }
 
 SIZE_T queryNew(HANDLE hProcess, ScanData* data, int size)
@@ -184,9 +181,96 @@ void printQueryAddresses(SIZE_T length)
 
 void ProcMemInfo(int pid);
 
+#include "query.h"
 #include "scan.h"
 
 int main()
+{
+	int pid = 16300;
+	int size = 0;
+	int sign = 0;
+	int endian = 0;
+	char cmd = '\0';
+
+	printf("Enter the PID: ");
+	scanf("%d", &pid);
+
+	printf("Enter the Data Size (1, 2, 4, 8): ");
+	scanf("%d", &size);
+
+	printf("Enter the Sign (0 == unsigned, 1 == signed): ");
+	scanf("%d", &sign);
+
+	printf("Enter the Endian (0 == little, 1 == big): ");
+	scanf("%d", &endian);
+
+	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+
+	PrimitiveData minData;
+	PrimitiveData maxData;
+
+	PrimitiveData* ptrMin;
+	PrimitiveData* ptrMax;
+
+	LPCVOID address;
+	SIZE_T length;
+
+	while (cmd != 'q' && cmd != 'Q')
+	{
+		printf("Enter the Commands::\n");
+		printf("  S : New Scan\n");
+		printf("  s : Scan Continue\n");
+		printf("  m : Modify Memory\n");
+		printf("  q, Q: Quit\n");
+
+		scanf("%c", &cmd);
+
+		switch (cmd)
+		{
+		case 'S':
+			ptrMin = NULL;
+			ptrMax = NULL;
+			printf("Enter the Min Value: ");
+			if (input((ScanData*)(&minData), size, sign))
+				ptrMin = &minData;
+			printf("Enter the Max Value: ");
+			if (input((ScanData*)(&maxData), size, sign))
+				ptrMax = &maxData;
+			length = ScanIntegerNewly(hProcess, ptrMin, ptrMax, size, endian, sign, TRUE, TRUE, TRUE);
+			PrintAddresses();
+			printf("Qnery New: %llu\n", length);
+			break;
+		case 's':
+			ptrMin = NULL;
+			ptrMax = NULL;
+			printf("Enter the Min Value: ");
+			if (input((ScanData*)(&minData), size, sign))
+				ptrMin = &minData;
+			printf("Enter the Max Value: ");
+			if (input((ScanData*)(&maxData), size, sign))
+				ptrMax = &maxData;
+			length = ScanIntegerContinuously(hProcess, ptrMin, ptrMax, size, endian, sign, TRUE, TRUE, TRUE);
+			PrintAddresses();
+			printf("Qnery Continue: %llu\n", length);
+			break;
+		case 'm':
+			printf("Enter the Memory Address: ");
+			scanf("%llx", &address);
+			printf("Enter the Value: ");
+			input((ScanData*)(&minData), size, sign);
+			WriteProcessMemory(hProcess, (LPVOID)address, (LPCVOID)minData.bytes, size, NULL);
+			printf("Modifying OK\n");
+		default:
+			break;
+		}
+	}
+
+	free(memBuffer);
+	free(adrBuffer);
+	return 0;
+}
+
+int main2()
 {
 	//int pid = 24024;
 
@@ -236,7 +320,7 @@ int main()
 		{
 		case 'S':
 			printf("Enter the Value: ");
-			input((ScanData*)(&data), size, sign, endian);
+			input((ScanData*)(&data), size, sign);
 			length = QueryNew(hProcess, (ScanData*)(&data), size);
 			//length = queryNew(hProcess, (ScanData*)(&data), size);
 			printQueryAddresses(length);
@@ -244,7 +328,7 @@ int main()
 			break;
 		case 's':
 			printf("Enter the Value: ");
-			input((ScanData*)(&data), size, sign, endian);
+			input((ScanData*)(&data), size, sign);
 			length = QueryContinue(hProcess, (ScanData*)(&data), size);
 			//length = queryContinue(hProcess, (ScanData*)(&data), size, length);
 			printQueryAddresses(length);
@@ -254,7 +338,7 @@ int main()
 			printf("Enter the Memory Address: ");
 			scanf("%llx", &address);
 			printf("Enter the Value: ");
-			input((ScanData*)(&data), size, sign, endian);
+			input((ScanData*)(&data), size, sign);
 			WriteProcessMemory(hProcess, (LPVOID)address, (LPCVOID)data.bytes, size, NULL);
 			printf("Modifying OK\n");
 		default:
@@ -311,14 +395,14 @@ int main1()
 		{
 		case 'S':
 			printf("Enter the Value: ");
-			input(&data, size, sign, endian);
+			input(&data, size, sign);
 			length = queryNew(hProcess, &data, size);
 			printQueryAddresses(length);
 			printf("Qnery New: %llu\n", length);
 			break;
 		case 's':
 			printf("Enter the Value: ");
-			input(&data, size, sign, endian);
+			input(&data, size, sign);
 			length = queryContinue(hProcess, &data, size, length);
 			printQueryAddresses(length);
 			printf("Qnery Continue: %llu\n", length);
@@ -327,7 +411,7 @@ int main1()
 			printf("Enter the Memory Address: ");
 			scanf("%llx", &address);
 			printf("Enter the Value: ");
-			input(&data, size, sign, endian);
+			input(&data, size, sign);
 			WriteProcessMemory(hProcess, (LPVOID)address, (LPCVOID)data.bytes, size, NULL);
 			printf("Modifying OK\n");
 		default:

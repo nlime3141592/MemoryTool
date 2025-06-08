@@ -1,161 +1,202 @@
+#include <assert.h>
+#include <stdio.h>
+
 #include "scan.h"
-#include <iostream>
 
-static PBYTE kmp_pi;
-
-static SIZE_T ADR_BUFFER_SIZE = 0;
-static SIZE_T ADR_BUFFER_COUNT = 0;
-static LPVOID* ADR_BUFFER = NULL;
-
-static SIZE_T MEM_BUFFER_SIZE = 0;
-static LPVOID* MEM_BUFFER = NULL;
-
-static SIZE_T AppendBuffer(LPVOID** src, SIZE_T* prevSize, SIZE_T nextSize)
+static SIZE_T AppendBuffer(void** src, SIZE_T prevSize, SIZE_T nextSize)
 {
 	if (nextSize == 0)
-		return *prevSize;
+		nextSize = (prevSize == 0) ? 1 : prevSize * 2;
 
-	LPVOID* resized = (LPVOID*)realloc(*src, sizeof(LPVOID) * nextSize);
-	if (!resized)
-		return *prevSize;
+	void* newAddr;
 
-	*src = resized;
-	*prevSize = nextSize;
+	if ((newAddr = realloc(*src, sizeof(LPVOID) * nextSize)) == NULL)
+	{
+		return prevSize;
+	}
+
+	*src = newAddr;
 	return nextSize;
 }
 
-static PBYTE KMP_PI(LPCVOID data, SIZE_T dataLength)
+static int CompareInteger(void* data1, void* data2, SIZE_T dataLength, UINT8 endianness, UINT8 sign)
 {
-	PBYTE p = (PBYTE)data;
-	PBYTE pi = (PBYTE)malloc(sizeof(BYTE) * dataLength);
+	assert(data1 != NULL && data2 != NULL);
+	assert(dataLength > 0);
 
-	SIZE_T i = 0;
-	SIZE_T j = 0;
-	pi[0] = 0;
+	int iEnd, iBeg, iDelta;
 
-	for (i = 1; i < dataLength; ++i)
+	if (endianness != ENDIAN_LITTLE)
 	{
-		while (j > 0 && p[i] != p[j])
-			j = kmp_pi[j - 1];
-		if (p[i] == p[j])
-			kmp_pi[i] = ++j;
+		iBeg = 0;
+		iEnd = dataLength;
+		iDelta = 1;
+	}
+	else
+	{
+		iBeg = dataLength - 1;
+		iEnd = -1;
+		iDelta = -1;
 	}
 
-	return pi;
-}
+	UINT8* d1 = (UINT8*)data1;
+	UINT8* d2 = (UINT8*)data2;
 
-static void KMP_PI_Free(PBYTE pi)
-{
-	free(pi);
-}
-
-static void ChangeEndian(PrimitiveData* data, SIZE_T dataLength)
-{
-	SIZE_T half = dataLength >> 2;
-
-	for (SIZE_T i = 0; i < half; ++i)
+	if (sign != SIGN_UNSIGNED)
 	{
-		int j = dataLength - i - 1;
-		int t = data->bytes[i];
-		data->bytes[i] = data->bytes[j];
-		data->bytes[j] = t;
-	}
-}
-
-static SIZE_T KMP(LPCVOID data, SIZE_T dataLength, SIZE_T idxRdBuffer, LPCVOID rdBuffer, SIZE_T rdBufferLength, LPCVOID pi)
-{
-	if (rdBufferLength - idxRdBuffer < dataLength)
-		return -1;
-
-	PBYTE p = (PBYTE)data;
-	PBYTE rd = (PBYTE)rdBuffer;
-
-	SIZE_T i = 0;
-
-	for (i = 0; i < dataLength; ++i)
-	{
-		if (p[i] != rd[idxRdBuffer + i])
-			return idxRdBuffer + i;
+		UINT8 b1 = d1[iBeg] & 0x80;
+		UINT8 b2 = d2[iBeg] & 0x80;
+		
+		if (b1 > b2)
+			return -1;
+		else if (b1 < b2)
+			return 1;
 	}
 
-	return idxRdBuffer + i;
+	for (int i = iBeg; i != iEnd; i += iDelta)
+	{
+		if (d1[i] < d2[i])
+			return -1;
+		else if (d1[i] > d2[i])
+			return 1;
+	}
+
+	return 0;
 }
 
-static int Compare(PrimitiveData* a, PrimitiveData* b, SIZE_T dataLength)
+static int CompareFloat(PrimitiveData* data1, PrimitiveData* data2, SIZE_T dataLength)
 {
+	assert(data1 != NULL && data2 != NULL);
+	assert(dataLength == 4 || dataLength == 8);
+
 	switch (dataLength)
 	{
-	case 1:
-		return a->udata8 == b->udata8;
-	case 2:
-		return a->udata16 == b->udata16;
 	case 4:
-		return a->udata32 == b->udata32;
+		if (data1->float32 < data2->float32)
+			return -1;
+		else if (data1->float32 > data2->float32)
+			return 1;
+		return 0;
 	case 8:
-		return a->udata64 == b->udata64;
+		if (data1->float64 < data2->float64)
+			return -1;
+		else if (data1->float64 > data2->float64)
+			return 1;
+		return 0;
 	default:
+		assert(FALSE);
 		return 0;
 	}
 }
 
-SIZE_T QueryNew(HANDLE hProcess, LPCVOID data, SIZE_T dataLength)
+static void ChangeEndian(void* data, SIZE_T dataLength)
 {
+	UINT8* d = (UINT8*)data;
+	SIZE_T i = 0;
+	SIZE_T j = dataLength - 1;
+	UINT8 t;
+
+	while (i < j)
+	{
+		t = d[i];
+		d[i] = d[j];
+		d[j] = t;
+		++i;
+		--j;
+	}
+}
+
+void PrintAddresses()
+{
+	for (SIZE_T i = 0; i < adrBufferCount; ++i)
+	{
+		printf("Address Found == %016p\n", adrBuffer[i]);
+	}
+}
+
+SIZE_T ScanIntegerNewly(
+	HANDLE hProcess,
+	LPCVOID minData, LPCVOID maxData,
+	SIZE_T dataLength,
+	UINT8 endianness,
+	UINT8 sign,
+	BOOL minInclusive, BOOL maxInclusive,
+	BOOL useMemoryAlignment
+)
+{
+	assert(hProcess != NULL);
+	assert(minData != NULL || maxData != NULL);
+	assert(dataLength > 0);
+
 	MEMORY_BASIC_INFORMATION mbi;
 	LPCVOID baseAddr = 0;
-	SIZE_T rdBufferLength;
-	SIZE_T i;
-
-	ADR_BUFFER_COUNT = 0;
+	SIZE_T rdLength;
 	
+	adrBufferCount = 0;
+
 	while (VirtualQueryEx(hProcess, baseAddr, &mbi, sizeof(mbi)) == sizeof(mbi))
 	{
 		if (mbi.State != MEM_COMMIT ||
-			mbi.RegionSize < dataLength)
+			mbi.RegionSize < dataLength ||
+			(mbi.Protect & PAGE_GUARD) ||
+			(mbi.Protect & PAGE_NOACCESS))
 		{
 			baseAddr = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
 			continue;
 		}
 
-		if (MEM_BUFFER_SIZE < mbi.RegionSize)
-			AppendBuffer(&MEM_BUFFER, &MEM_BUFFER_SIZE, mbi.RegionSize);
+		if (memBufferSize < mbi.RegionSize)
+			memBufferSize = AppendBuffer((void**)(&memBuffer), memBufferSize, mbi.RegionSize);
 
-		printf("Query for Base Address #%p (Region Size == %llu)\n", mbi.BaseAddress, mbi.RegionSize);
-		ReadProcessMemory(hProcess, mbi.BaseAddress, MEM_BUFFER, mbi.RegionSize, &rdBufferLength);
-		
-		for (i = 0; i < rdBufferLength; i += dataLength)
+		printf("[scan.cpp] Query for Base Address #%p (Region Size == %llu)\n", mbi.BaseAddress, mbi.RegionSize);
+
+		ReadProcessMemory(hProcess, mbi.BaseAddress, memBuffer, mbi.RegionSize, &rdLength);
+
+		// Memory Alignment를 고려한 방식으로 데이터 비교
+		// TODO: 기회가 된다면 KMP 알고리즘을 적용해 Memory Alignment를 고려하지 않는 방식의 읽기를 추가할 것.
+		for (SIZE_T i = 0; i < rdLength - dataLength; i += dataLength)
 		{
-			if (!Compare((PrimitiveData*)((PBYTE)MEM_BUFFER + i), (PrimitiveData*)data, dataLength))
+			if (minData != NULL && CompareInteger((void*)minData, (void*)((PBYTE)memBuffer + i), dataLength, endianness, sign) >= (minInclusive != FALSE))
 				continue;
+			if (maxData != NULL && CompareInteger((void*)((PBYTE)memBuffer + i), (void*)maxData, dataLength, endianness, sign) >= (maxInclusive != FALSE))
+				continue;
+			if (adrBufferCount == adrBufferSize)
+				adrBufferSize = AppendBuffer((void**)(&adrBuffer), adrBufferSize, adrBufferSize * 2);
 
-			if (ADR_BUFFER_COUNT == ADR_BUFFER_SIZE)
-				AppendBuffer(&ADR_BUFFER, &ADR_BUFFER_SIZE, ADR_BUFFER_COUNT * 2);
-
-			ADR_BUFFER[ADR_BUFFER_COUNT++] = ((PBYTE)mbi.BaseAddress + i);
+			adrBuffer[adrBufferCount++] = ((PBYTE)mbi.BaseAddress + i);
 		}
 
 		baseAddr = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
 	}
 
-	return ADR_BUFFER_COUNT;
+	return adrBufferCount;
 }
 
-SIZE_T QueryContinue(HANDLE hProcess, LPCVOID data, SIZE_T dataLength)
+SIZE_T ScanIntegerContinuously(
+	HANDLE hProcess,
+	LPCVOID minData, LPCVOID maxData,
+	SIZE_T dataLength,
+	UINT8 endianness,
+	UINT8 sign,
+	BOOL minInclusive, BOOL maxInclusive,
+	BOOL useMemoryAlignment
+)
 {
 	MEMORY_BASIC_INFORMATION mbi;
 	LPCVOID baseAddr = 0;
 	SIZE_T shouldRead = 0;
-	SIZE_T rdBufferLength;
+	SIZE_T rdLength;
 	SIZE_T i;
 	SIZE_T j;
-	SIZE_T n = ADR_BUFFER_COUNT;
+	SIZE_T n = adrBufferCount;
 
-	ADR_BUFFER_COUNT = 0;
+	adrBufferCount = 0;
 
 	VirtualQueryEx(hProcess, baseAddr, &mbi, sizeof(mbi));
 
-	for (SIZE_T i = 0; i < n; ++i)
+	for (i = 0; i < n; ++i)
 	{
-		while ((PBYTE)mbi.BaseAddress + mbi.RegionSize < ADR_BUFFER[i])
+		while ((PBYTE)mbi.BaseAddress + mbi.RegionSize < adrBuffer[i])
 		{
 			baseAddr = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
 			VirtualQueryEx(hProcess, baseAddr, &mbi, sizeof(mbi));
@@ -164,18 +205,87 @@ SIZE_T QueryContinue(HANDLE hProcess, LPCVOID data, SIZE_T dataLength)
 
 		if (shouldRead != 0)
 		{
-			ReadProcessMemory(hProcess, mbi.BaseAddress, MEM_BUFFER, mbi.RegionSize, &rdBufferLength);
+			if (memBufferSize < mbi.RegionSize)
+				memBufferSize = AppendBuffer((void**)(&memBuffer), memBufferSize, mbi.RegionSize);
+
+			ReadProcessMemory(hProcess, mbi.BaseAddress, memBuffer, mbi.RegionSize, &rdLength);
 			shouldRead = 0;
 		}
 
-		j = (PBYTE)ADR_BUFFER[i] - mbi.BaseAddress;
+		j = (PBYTE)adrBuffer[i] - mbi.BaseAddress;
 
-		printf("Query for Address #%p\n", ADR_BUFFER[i]);
-		if (!Compare((PrimitiveData*)((PBYTE)MEM_BUFFER + j), (PrimitiveData*)data, dataLength))
+		printf("[scan.cpp] Query for Address #%p\n", adrBuffer[i]);
+
+		if (minData != NULL && CompareInteger((void*)minData, (void*)((PBYTE)memBuffer + j), dataLength, endianness, sign) >= (minInclusive != FALSE))
+			continue;
+		if (maxData != NULL && CompareInteger((void*)((PBYTE)memBuffer + j), (void*)maxData, dataLength, endianness, sign) >= (maxInclusive != FALSE))
 			continue;
 
-		ADR_BUFFER[ADR_BUFFER_COUNT++] = ADR_BUFFER[i];
+		adrBuffer[adrBufferCount++] = adrBuffer[i];
 	}
 
-	return ADR_BUFFER_COUNT;
+	return adrBufferCount;
+}
+
+SIZE_T ScanFloatNewly(
+	HANDLE hProcess,
+	LPCVOID minData, LPCVOID maxData,
+	SIZE_T dataLength,
+	UINT8 endianness,
+	UINT8 sign,
+	BOOL minInclusive, BOOL maxInclusive
+)
+{
+	assert(hProcess != NULL);
+	assert(minData != NULL || maxData != NULL);
+	assert(dataLength == 4 || dataLength == 8);
+
+	MEMORY_BASIC_INFORMATION mbi;
+	LPCVOID baseAddr = 0;
+	SIZE_T rdLength;
+
+	PrimitiveData* pMin = (PrimitiveData*)minData;
+	PrimitiveData* pMax = (PrimitiveData*)maxData;
+	PrimitiveData targetData;
+
+	adrBufferCount = 0;
+
+	while (VirtualQueryEx(hProcess, baseAddr, &mbi, sizeof(mbi)) == sizeof(mbi))
+	{
+		if (mbi.State != MEM_COMMIT)
+		{
+			baseAddr = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
+			continue;
+		}
+
+		if (memBufferSize < mbi.RegionSize)
+			memBufferSize = AppendBuffer((void**)(&memBuffer), memBufferSize, mbi.RegionSize);
+
+		ReadProcessMemory(hProcess, mbi.BaseAddress, memBuffer, mbi.RegionSize, &rdLength);
+
+		// Memory Alignment를 고려한 방식으로 데이터 비교
+		// TODO: 기회가 된다면 KMP 알고리즘을 적용해 Memory Alignment를 고려하지 않는 방식의 읽기를 추가할 것.
+		for (SIZE_T i = 0; i < rdLength - dataLength; i += dataLength)
+		{
+			memcpy(&targetData, (PBYTE*)(memBuffer + i), dataLength);
+
+			if (endianness != ENDIAN_LITTLE)
+			{
+				ChangeEndian((void*)(&targetData), dataLength);
+			}
+
+			if (minData != NULL && CompareFloat((PrimitiveData*)minData, (PrimitiveData*)((PBYTE)memBuffer + i), dataLength) >= (minInclusive != FALSE))
+				continue;
+			if (maxData != NULL && CompareFloat((PrimitiveData*)((PBYTE)memBuffer + i), (PrimitiveData*)maxData, dataLength) >= (maxInclusive != FALSE))
+				continue;
+			if (adrBufferCount == adrBufferSize)
+				adrBufferSize = AppendBuffer((void**)(&adrBuffer), adrBufferSize, adrBufferSize * 2);
+
+			adrBuffer[adrBufferCount++] = ((PBYTE)mbi.BaseAddress + i);
+		}
+
+		baseAddr = (PBYTE)mbi.BaseAddress + mbi.RegionSize;
+	}
+
+	return adrBufferCount;
 }
