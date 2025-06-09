@@ -6,6 +6,8 @@
 
 #include "MemoryIO.h"
 
+#include "ScanUI.h"
+
 #define MAX_LOADSTRING 100
 
 // 전역 변수:
@@ -28,39 +30,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: 여기에 코드를 입력합니다.
-    LPCWSTR path = L"D:\\Programming\\MemoryTool\\TowerDefenceGame\\TowerDefenceAlpha.exe";
-
-    STARTUPINFOW si = { sizeof(si) };
-    PROCESS_INFORMATION pi;
-
-    /*BOOL result = CreateProcess(
-        path,
-        NULL,
-        NULL,
-        NULL,
-        FALSE,
-        0,
-        NULL,
-        NULL,
-        &si,
-        &pi
-    );
-
-    if (result)
-    {
-        return FALSE;
-    }*/
-
-    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, 0x2E84);
-
-    if (!hProcess)
-    {
-        return FALSE;
-    }
-
-    LONG64 address = 0x2027f394dc4;
-    WriteInt32(hProcess, (LPVOID)address, 99999);
-
+    
     // 전역 문자열을 초기화합니다.
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_MEMORYSCANNER, szWindowClass, MAX_LOADSTRING);
@@ -81,7 +51,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
-            TranslateMessage(&msg);
+            TranslateMessage(&msg); 
             DispatchMessage(&msg);
         }
     }
@@ -134,6 +104,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
+   InitScanUI(hWnd);
+
    if (!hWnd)
    {
       return FALSE;
@@ -171,6 +143,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+            case MY_BUTTON_ID:
+                MessageBox(hWnd, TEXT("button pressed"), TEXT("my event"), MB_OK);
+                break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -181,7 +156,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            TextOut(hdc, 50, 50, TEXT("Hello World"), 13);
             EndPaint(hWnd, &ps);
         }
         break;

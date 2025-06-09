@@ -19,6 +19,12 @@
     <Filter Include="소스 파일\MemoryHandling">
       <UniqueIdentifier>{8845d086-a8a5-4a93-88c1-0a905f844fdf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\UI">
+      <UniqueIdentifier>{e1d168fb-6a93-4c96-bd25-477d5e43b747}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\UI">
+      <UniqueIdentifier>{aa5e2807-b8d6-42f9-a2ff-0404a0ea10c9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -36,6 +42,9 @@
     <ClInclude Include="MemoryIO.h">
       <Filter>헤더 파일\MemoryHandling</Filter>
     </ClInclude>
+    <ClInclude Include="ScanUI.h">
+      <Filter>헤더 파일\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MemoryScanner.cpp">
@@ -43,6 +52,9 @@
     </ClCompile>
     <ClCompile Include="MemoryIO.cpp">
       <Filter>소스 파일\MemoryHandling</Filter>
+    </ClCompile>
+    <ClCompile Include="ScanUI.cpp">
+      <Filter>소스 파일\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
