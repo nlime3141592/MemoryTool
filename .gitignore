@@ -7,3 +7,51 @@ MemoryScanner/.vs
 MemoryScanner/x64/Debug
 MemoryScanner/MemoryScanner/x64/Debug
 MemoryScanner/MemoryScannerConsoleTest/x64/Debug
+
+# FactoryGame (Unity Project)
+# Ignore Unity specific folders and files for FactoryGame project
+FactoryGame/Library/
+FactoryGame/Temp/
+FactoryGame/Obj/
+FactoryGame/Build/
+FactoryGame/Builds/
+FactoryGame/Logs/
+FactoryGame/UserSettings/
+FactoryGame/MemoryCaptures/
+FactoryGame/ExportedObj/
+FactoryGame/.vs/
+FactoryGame/.vscode/
+FactoryGame/*.csproj
+FactoryGame/*.unityproj
+FactoryGame/*.sln
+FactoryGame/*.suo
+FactoryGame/*.tmp
+FactoryGame/*.user
+FactoryGame/*.userprefs
+FactoryGame/*.pidb
+FactoryGame/*.booproj
+FactoryGame/*.svd
+FactoryGame/*.pdb
+FactoryGame/*.mdb
+FactoryGame/*.opendb
+FactoryGame/*.VC.db
+
+# Optional: Ignore CrashHandler log files
+FactoryGame/CrashHandler/
+FactoryGame/FactoryGame_BackupThisFolder_ButDontShipItWithYourGame/
+
+# Ignore Unity Collaborate files
+FactoryGame/Collab/
+
+# Ignore Addressable build files
+FactoryGame/Assets/AddressableAssetsData/*/Build*
+FactoryGame/Assets/AddressableAssetsData/*/bin/
+
+# Optional: Ignore builds if in custom folders
+FactoryGame/Builds*/
+
+# If using Plastic SCM
+FactoryGame/.plastic/
+
+# Ignore any local test data or generated files
+FactoryGame/TestResults/
