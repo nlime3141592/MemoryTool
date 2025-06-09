@@ -101,8 +101,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
+   int x = 100;
+   int y = 100;
+
+   // 1080:720 == 4:3 ratio
+   int nWidth = 1080;
+   int nHeight = 720;
+
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+      x, y, nWidth, nHeight, nullptr, nullptr, hInstance, nullptr);
 
    InitScanUI(hWnd);
 
