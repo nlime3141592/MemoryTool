@@ -132,12 +132,14 @@
     <ClInclude Include="MemoryScanner.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ScanUI.h" />
+    <ClInclude Include="scanutil.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MemoryIO.cpp" />
     <ClCompile Include="MemoryScanner.cpp" />
     <ClCompile Include="ScanUI.cpp" />
+    <ClCompile Include="scanutil.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MemoryScanner.rc" />

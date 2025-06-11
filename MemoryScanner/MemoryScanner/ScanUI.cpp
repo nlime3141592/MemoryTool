@@ -1,22 +1,18 @@
 #include "ScanUI.h"
+#include "scanutil.h"
 
 #pragma comment(lib, "comctl32.lib")
 
 #include <CommCtrl.h>
 
-static HWND InitTestListView(HWND hwndParent, HINSTANCE hInstance, int w, int h)
+static HWND InitScannedListView(HWND hwndParent, HINSTANCE hInstance, int x, int y, int w, int h)
 {
-    RECT rcClient;
-    GetClientRect(hwndParent, &rcClient);
-
     HWND hWndListView = CreateWindow(
         WC_LISTVIEW,
         L"",
         WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE,
-        0, 0,
+        x, y,
         w, h,
-        //rcClient.right - rcClient.left,
-        //rcClient.bottom - rcClient.top,
         hwndParent,
         NULL,
         hInstance,
@@ -25,93 +21,147 @@ static HWND InitTestListView(HWND hwndParent, HINSTANCE hInstance, int w, int h)
     LVCOLUMN lvc;
     lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
-    lvc.pszText = (LPWSTR)L"name";
-    lvc.cx = 100;
+    lvc.pszText = (LPWSTR)L"Address";
+    lvc.cx = 160;
     lvc.iSubItem = 0;
     ListView_InsertColumn(hWndListView, 0, &lvc);
 
-    LVITEM lvi;
-    lvi.mask = LVIF_TEXT;
+    lvc.pszText = (LPWSTR)L"Scanned Value";
+    lvc.cx = 160;
+    lvc.iSubItem = 1;
+    ListView_InsertColumn(hWndListView, 1, &lvc);
 
-    lvi.iItem = 0;
-    lvi.iSubItem = 0;
-    lvi.pszText = (LPWSTR)L"항목1";
-    ListView_InsertItem(hWndListView, &lvi);
-    ListView_SetItemText(hWndListView, 0, 1, (LPWSTR)L"이 것은 첫 번째 항목입니다.");
+    lvc.pszText = (LPWSTR)L"Current Value";
+    lvc.cx = 160;
+    lvc.iSubItem = 2;
+    ListView_InsertColumn(hWndListView, 2, &lvc);
 
     return hWndListView;
 }
 
-static HWND InitDataFormatContainer(HWND hwndParent, HINSTANCE hInstance)
+void AddScannedAddress(HWND hwndListView, UINT64 address, LPCVOID data, SIZE_T dataLength)
 {
-    HWND container = CreateWindow(
-        0,
-        L"DummyClass", // dummy
-        WS_CHILD | WS_VISIBLE | SS_WHITERECT,
-        540, 480, 540, 240,
-        hwndParent,
-        NULL,
-        hInstance,
-        NULL
-    );
+    LVITEM lvi;
+    lvi.mask = LVIF_TEXT;
 
-    InitTestListView(container, hInstance, 540, 240);
+    int i = ListView_GetItemCount(hwndListView);
 
-    return container;
+    WCHAR szAddress[32];
+    swprintf(szAddress, 32, L"%016llX", address);
+
+    WCHAR wrData[256] = L"";
+    ByteStreamToWideString(wrData, data, dataLength);
+    
+    lvi.iItem = i;
+    lvi.iSubItem = 0;
+    lvi.pszText = szAddress;
+
+    ListView_InsertItem(hwndListView, &lvi);
+    ListView_SetItemText(hwndListView, i, 1, wrData);
+    ListView_SetItemText(hwndListView, i, 2, wrData);
 }
 
-static HWND InitTargetDataContainer(HWND hwndParent, HINSTANCE hInstance)
+static HWND InitPinnedListView(HWND hwndParent, HINSTANCE hInstance, int x, int y, int w, int h)
 {
-    HWND container = CreateWindow(
-        0,
-        L"DummyClass", // dummy
-        WS_CHILD | WS_VISIBLE | SS_WHITERECT,
-        540, 0, 540, 480,
+    HWND hWndListView = CreateWindow(
+        WC_LISTVIEW,
+        L"",
+        WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE,
+        x, y,
+        w, h,
         hwndParent,
         NULL,
         hInstance,
-        NULL
-    );
+        NULL);
 
-    InitTestListView(container, hInstance, 540, 480);
+    LVCOLUMN lvc;
+    lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
-    return container;
+    lvc.pszText = (LPWSTR)L"Address";
+    lvc.cx = 160;
+    lvc.iSubItem = 0;
+    ListView_InsertColumn(hWndListView, 0, &lvc);
+
+    lvc.pszText = (LPWSTR)L"Current Value";
+    lvc.cx = 160;
+    lvc.iSubItem = 1;
+    ListView_InsertColumn(hWndListView, 1, &lvc);
+
+    lvc.pszText = (LPWSTR)L"Description";
+    lvc.cx = 160;
+    lvc.iSubItem = 2;
+    ListView_InsertColumn(hWndListView, 2, &lvc);
+
+    return hWndListView;
 }
 
-static HWND InitPinnedDataContainer(HWND hwndParent, HINSTANCE hInstance)
+void AddPinnedAddress(HWND hwndListView, UINT64 address, LPCVOID data, SIZE_T dataLength)
 {
-    HWND container = CreateWindow(
-        0,
-        L"DummyClass", // dummy
-        WS_CHILD | WS_VISIBLE | SS_WHITERECT,
-        0, 540, 540, 240,
-        hwndParent,
-        NULL,
-        hInstance,
-        NULL
-    );
+    LVITEM lvi;
+    lvi.mask = LVIF_TEXT;
 
-    InitTestListView(container, hInstance, 540, 240);
+    int i = ListView_GetItemCount(hwndListView);
 
-    return container;
+    WCHAR szAddress[32];
+    swprintf(szAddress, 32, L"%016llX", address);
+
+    WCHAR wrData[256] = L"";
+    ByteStreamToWideString(wrData, data, dataLength);
+
+    lvi.iItem = i;
+    lvi.iSubItem = 0;
+    lvi.pszText = szAddress;
+
+    ListView_InsertItem(hwndListView, &lvi);
+    ListView_SetItemText(hwndListView, i, 1, wrData);
+    ListView_SetItemText(hwndListView, i, 2, wrData);
 }
 
-static HWND InitScannedDataContainer(HWND hwndParent, HINSTANCE hInstance)
+static HWND InitTestListView(HWND hwndParent, HINSTANCE hInstance, int x, int y, int w, int h)
 {
-    HWND container = CreateWindow(
-        0,
-        L"DummyClass", // dummy
-        WS_CHILD | WS_VISIBLE | SS_WHITERECT,
-        0, 0, 540, 480,
+    HWND hWndListView = CreateWindow(
+        WC_LISTVIEW,
+        L"",
+        WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE,
+        x, y,
+        w, h,
         hwndParent,
         NULL,
         hInstance,
-        NULL
-    );
+        NULL);
 
-    InitTestListView(container, hInstance, 540, 480);
+    LVCOLUMN lvc;
+    lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
-    return container;
+    lvc.pszText = (LPWSTR)L"Address";
+    lvc.cx = 160;
+    lvc.iSubItem = 0;
+    ListView_InsertColumn(hWndListView, 0, &lvc);
+
+    lvc.pszText = (LPWSTR)L"Scanned Value";
+    lvc.cx = 160;
+    lvc.iSubItem = 1;
+    ListView_InsertColumn(hWndListView, 1, &lvc);
+
+    lvc.pszText = (LPWSTR)L"Current Value";
+    lvc.cx = 160;
+    lvc.iSubItem = 2;
+    ListView_InsertColumn(hWndListView, 1, &lvc);
+
+    LVITEM lvi;
+    lvi.mask = LVIF_TEXT;
+
+    for (int i = 0; i < 20; ++i)
+    {
+        lvi.iItem = i;
+        lvi.iSubItem = 0;
+        lvi.pszText = (LPWSTR)L"Address";
+        ListView_InsertItem(hWndListView, &lvi);
+        ListView_SetItemText(hWndListView, i, 1, (LPWSTR)L"0 - 이 것은 첫 번째 항목입니다.");
+        ListView_SetItemText(hWndListView, i, 2, (LPWSTR)L"0 - 이 것은 두 번째 항목입니다.");
+    }
+
+    return hWndListView;
 }
 
 void InitScanUI(HWND hWnd)
@@ -145,8 +195,19 @@ void InitScanUI(HWND hWnd)
     icex.dwICC = ICC_LISTVIEW_CLASSES;
     InitCommonControlsEx(&icex);
 
-    InitScannedDataContainer(hWnd, hInstance);
-    //InitPinnedDataContainer(hWnd, hInstance);
-    //InitTargetDataContainer(hWnd, hInstance);
-    //InitDataFormatContainer(hWnd, hInstance);
+    RECT rcClient;
+    GetClientRect(hWnd, &rcClient);
+
+    HWND scanned = InitScannedListView(hWnd, hInstance, 10, 10, 525, 465);
+    HWND pinned = InitPinnedListView(hWnd, hInstance, 10, 485, 525, 165);
+
+    UINT8 temp[16] = { 12,13,45,46,78,79,123,456,789,31,64,97,21,54,87,10 };
+    AddScannedAddress(scanned, 0x1234, temp, 4);
+    AddPinnedAddress(pinned, 0x5678, temp, 8);
+
+    //InitTestListView(hWnd, hInstance, 10, 10, 525, 465);
+    //InitTestListView(hWnd, hInstance, 10, 485, 525, 165);
+
+    //InitTestListView(hWnd, hInstance, 540, 0, 540, 480);
+    //InitTestListView(hWnd, hInstance, 540, 480, 540, 240);
 }
