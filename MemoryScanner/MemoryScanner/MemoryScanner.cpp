@@ -106,10 +106,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    int y = 100;
 
    // 1080:720 == 4:3 ratio
-   int nWidth = 1080;
+   int nWidth = 1005;
    int nHeight = 720;
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+   HWND hWnd = CreateWindowW(szWindowClass, szTitle,
+      WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
       x, y, nWidth, nHeight, nullptr, nullptr, hInstance, nullptr);
 
    InitScanUI(hWnd);
