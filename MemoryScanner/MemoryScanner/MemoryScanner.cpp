@@ -155,6 +155,39 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case MY_BUTTON_ID:
                 MessageBox(hWnd, TEXT("button pressed"), TEXT("my event"), MB_OK);
                 break;
+
+            case RADIO_NUMBER_INTEGER:
+                break;
+            case RADIO_NUMBER_FLOAT:
+                break;
+            case RADIO_RANGE_EXACT:
+                OnRadioExactSelected();
+                break;
+            case RADIO_RANGE_MINMAX:
+                OnRadioMinMaxSelected();
+                break;
+
+            case NAVIGATOR_SCAN_NEW:
+                OnScanNewClicked();
+                break;
+            case NAVIGATOR_SCAN_CONTINUE:
+                OnScanContinueClicked();
+                break;
+
+            case PID_REFRESH:
+                OnPidRefreshClicked();
+                break;
+            case PID_SELECT:
+                OnPidSelectClicked();
+                break;
+            case PID_CLOSE:
+                OnPidCloseClicked();
+                break;
+
+            case MOD_MODIFY:
+                OnModModifyClicked();
+                break;
+
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -166,6 +199,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             EndPaint(hWnd, &ps);
+        }
+        break;
+    case WM_NOTIFY:
+        {
+            OnNotifyListView(lParam);
         }
         break;
     case WM_DESTROY:
