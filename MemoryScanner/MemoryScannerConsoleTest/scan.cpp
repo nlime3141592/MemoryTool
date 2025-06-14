@@ -150,10 +150,11 @@ SIZE_T ScanIntegerNewly(
 
 		printf("[scan.cpp] Query for Base Address #%p (Region Size == %llu)\n", mbi.BaseAddress, mbi.RegionSize);
 
+		// mbi.RegionSize는 시스템 페이지 크기의 정수배임이 보장됨.
 		ReadProcessMemory(hProcess, mbi.BaseAddress, memBuffer, mbi.RegionSize, &rdLength);
 
 		// Memory Alignment를 고려한 방식으로 데이터 비교
-		// TODO: 기회가 된다면 KMP 알고리즘을 적용해 Memory Alignment를 고려하지 않는 방식의 읽기를 추가할 것.
+		// TODO: KMP 알고리즘을 적용해 Memory Alignment를 고려하지 않는 방식의 읽기를 추가할 것.
 		for (SIZE_T i = 0; i < rdLength - dataLength; i += dataLength)
 		{
 			if (minData != NULL && CompareInteger((void*)minData, (void*)((PBYTE)memBuffer + i), dataLength, endianness, sign) >= (minInclusive != FALSE))

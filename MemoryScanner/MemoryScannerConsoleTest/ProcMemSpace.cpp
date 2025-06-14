@@ -4,7 +4,7 @@
 
 int ProcMemSpace()
 {
-	int pid = 14760;
+	int pid = 20064;
 
 	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 

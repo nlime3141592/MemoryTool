@@ -103,6 +103,8 @@ SIZE_T queryNew(HANDLE hProcess, ScanData* data, int size)
 		for (SIZE_T i = 0; i < mbi.RegionSize; i += size)
 		{
 			LPCVOID addrSource = (PVOID64)((SIZE_T)mbi.BaseAddress + i);
+
+			// 데이터 크기 단위로 읽기 (size 변수)
 			ReadProcessMemory(hProcess, addrSource, source.bytes, size, NULL);
 
 			switch (size)
@@ -179,12 +181,18 @@ void printQueryAddresses(SIZE_T length)
 	}
 }
 
+void BasicMemInfo();
 void ProcMemInfo(int pid);
 
 #include "query.h"
 #include "scan.h"
 
 int main()
+{
+	BasicMemInfo();
+}
+
+int main3()
 {
 	int pid = 16300;
 	int size = 0;

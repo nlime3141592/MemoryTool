@@ -540,11 +540,6 @@ void OnPidRefreshClicked()
 {
     ListView_DeleteAllItems(lvPid);
 
-    // 리스트 뷰에 데이터를 추가하는 방법을 보여줌.
-    //UINT8 temp[16] = { 12,13,45,46,78,79,123,456,789,31,64,97,21,54,87,10 };
-    //AddScannedAddress(lvScanned, 0x1234, temp, 4);
-    //AddPinnedAddress(lvPinned, 0x5678, temp, 8);
-
     LVITEM lvi;
     lvi.mask = LVIF_TEXT;
 
@@ -926,9 +921,4 @@ void InitScanUI(HWND hwnd)
 
     EnableWindow(btnProcClose, FALSE);
     EnableWindow(btnProcSelect, FALSE);
-
-    // 리스트 뷰에 데이터를 추가하는 방법을 보여줌.
-    //UINT8 temp[16] = { 12,13,45,46,78,79,123,456,789,31,64,97,21,54,87,10 };
-    //AddScannedAddress(lvScanned, 0x1234, temp, 4);
-    //AddPinnedAddress(lvPinned, 0x5678, temp, 8);
 }
