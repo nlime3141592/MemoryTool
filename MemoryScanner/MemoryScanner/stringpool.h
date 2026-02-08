@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <Windows.h>
 #include <stdlib.h>
@@ -9,13 +9,14 @@ public:
 	StringPool();
 	~StringPool();
 
-	DWORD Push(const TCHAR* src, DWORD size);
-	DWORD TrySearch(TCHAR* dst, DWORD index);
+	void Clear();
+	DWORD Push(LPCWSTR src, DWORD size);
+	DWORD TrySearch(LPWSTR dst, DWORD index);
 
 private:
 	DWORD _rawDataCount;
 	DWORD _rawDataCapacity;
-	TCHAR* _rawDataPool;
+	LPWSTR _rawDataPool;
 
 	DWORD _offsetCount;
 	DWORD _offsetCapacity;

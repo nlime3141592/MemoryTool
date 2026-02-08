@@ -1,10 +1,10 @@
-#include "stringpool.h"
+﻿#include "stringpool.h"
 
 StringPool::StringPool()
 {
 	_rawDataCount = 0;
 	_rawDataCapacity = 65536;
-	_rawDataPool = (TCHAR*)malloc(sizeof(TCHAR) * _rawDataCapacity);
+	_rawDataPool = (LPWSTR)malloc(sizeof(WCHAR) * _rawDataCapacity);
 
 	_offsetCount = 0;
 	_offsetCapacity = 1024;
@@ -19,26 +19,38 @@ StringPool::~StringPool()
 	_offsetCount = 0;
 	_offsetCapacity = 0;
 
-	free(_rawDataPool);
-	free(_offsetPool);
+	free((void*)_rawDataPool);
+	free((void*)_offsetPool);
 }
 
-DWORD StringPool::Push(const TCHAR* src, DWORD size)
+void StringPool::Clear()
+{
+	_rawDataCount = 0;
+	_offsetCount = 0;
+}
+
+DWORD StringPool::Push(LPCWSTR src, DWORD size)
 {
 	DWORD index = _rawDataCount;
 
 	if (_rawDataCount + size + 1 >= _rawDataCapacity)
 	{
-		_rawDataPool = Append(_rawDataPool, _rawDataCapacity, _rawDataCapacity * 2);
+		DWORD nextCapacity = _rawDataCapacity * 2;
+
+		_rawDataPool = Append(_rawDataPool, _rawDataCapacity, nextCapacity);
+		_rawDataCapacity = nextCapacity;
 	}
 
-	_rawDataPool[index] = (TCHAR)size;
-	memcpy(_rawDataPool + 1, src, size);
-	_rawDataCount = size + 1;
+	_rawDataPool[index] = (WCHAR)size;
+	memcpy(_rawDataPool + index + 1, src, size * sizeof(WCHAR));
+	_rawDataCount += size + 1;
 
 	if (_offsetCount >= _offsetCapacity)
 	{
-		_offsetPool = Append(_offsetPool, _offsetCapacity, _offsetCapacity * 2);
+		DWORD nextCapacity = _offsetCapacity * 2;
+
+		_offsetPool = Append(_offsetPool, _offsetCapacity, nextCapacity);
+		_offsetCapacity = nextCapacity;
 	}
 
 	_offsetPool[_offsetCount] = index;
@@ -47,7 +59,7 @@ DWORD StringPool::Push(const TCHAR* src, DWORD size)
 	return index;
 }
 
-DWORD StringPool::TrySearch(TCHAR* dst, DWORD index)
+DWORD StringPool::TrySearch(LPWSTR dst, DWORD index)
 {
 	DWORD i = 0;
 	DWORD j = _offsetCount - 1;
@@ -68,9 +80,11 @@ DWORD StringPool::TrySearch(TCHAR* dst, DWORD index)
 
 	if (r != 0)
 	{
-		DWORD length = (DWORD)_rawDataPool[index];
-		memcpy(dst, &_rawDataPool[index + 1], length);
+		r = (DWORD)_rawDataPool[index];
+		memcpy(dst, &_rawDataPool[index + 1], r * sizeof(WCHAR));
 	}
+
+	dst[r] = 0;
 
 	return r;
 }
@@ -82,10 +96,13 @@ T* StringPool::Append(const T* array, DWORD capacityCurrent, DWORD capacityNext)
 	DWORD sc = s * capacityCurrent;
 	DWORD sn = s * capacityNext;
 
-	T* newArray = (T*)malloc(sc);
+	T* newArray = (T*)malloc(sn);
 
-	memcpy(newArray, array, sc);
-	free(array);
+	if (newArray != 0)
+	{
+		memcpy(newArray, array, sc);
+		free((void*)array);
+	}
 
 	return newArray;
 }
