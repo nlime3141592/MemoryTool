@@ -128,18 +128,26 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="memmanipulator.h" />
     <ClInclude Include="MemoryScanner.h" />
+    <ClInclude Include="memscanner.h" />
+    <ClInclude Include="pshandle.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="scan.h" />
     <ClInclude Include="ScanUI.h" />
     <ClInclude Include="scanutil.h" />
+    <ClInclude Include="stringpool.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="memmanipulator.cpp" />
     <ClCompile Include="MemoryScanner.cpp" />
+    <ClCompile Include="memscanner.cpp" />
+    <ClCompile Include="pshandle.cpp" />
     <ClCompile Include="scan.cpp" />
     <ClCompile Include="ScanUI.cpp" />
     <ClCompile Include="scanutil.cpp" />
+    <ClCompile Include="stringpool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MemoryScanner.rc" />

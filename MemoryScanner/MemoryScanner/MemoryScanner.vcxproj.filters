@@ -48,6 +48,18 @@
     <ClInclude Include="scan.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="memscanner.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="memmanipulator.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="pshandle.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="stringpool.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MemoryScanner.cpp">
@@ -60,6 +72,18 @@
       <Filter>소스 파일\Util</Filter>
     </ClCompile>
     <ClCompile Include="scan.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="memscanner.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="memmanipulator.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="pshandle.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="stringpool.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
