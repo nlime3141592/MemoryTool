@@ -1,18 +1,26 @@
-#include "pshandle.h"
+﻿#include "pshandle.h"
 
-#include <Windows.h>
-#include <Psapi.h>
-
-#include <vector>
-
-int RefreshProcessList(std::vector<DWORD>& pidList)
+ProcessListManager::ProcessListManager() :
+	_handleList(HANDLE_LIST_CAPACITY),
+	_openProcess(nullptr),
+	_pidListCapacity(PID_LIST_CAPACITY)
 {
-	pidList.clear();
+	_pidListBuffer = (DWORD*)malloc(sizeof(DWORD) * PID_LIST_CAPACITY);
+}
+
+ProcessListManager::~ProcessListManager()
+{
+	free((void*)_pidListBuffer);
+}
+
+DWORD ProcessListManager::Refresh()
+{
+	_handleList.clear();
 
 	DWORD bytes;
 	DWORD count;
 
-	if (!EnumProcesses(pidList.data(), sizeof(DWORD) * pidList.capacity(), &bytes))
+	if (!EnumProcesses(_pidListBuffer, sizeof(DWORD) * PID_LIST_CAPACITY, &bytes))
 	{
 		return 0;
 	}
@@ -21,25 +29,94 @@ int RefreshProcessList(std::vector<DWORD>& pidList)
 
 	for (DWORD i = 0; i < count; ++i)
 	{
-		DWORD pid = pidList[i];
-
-		if (pid == 0)
+		if (_pidListBuffer[i] == 0)
 			continue;
 
-		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+		ProcessHandle handle;
+
+		handle.pid = _pidListBuffer[i];
+		handle.iNamePool = -1;
+
+		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, handle.pid);
 
 		if (hProcess)
 		{
-			HMODULE hMod;
+			HMODULE hModule;
 			DWORD cbNeeded;
-			TCHAR szProcessName[256] = TEXT("<unknown>");
+			//DWORD size = MAX_PATH;
+			TCHAR szProcessName[MAX_PATH] = L"<unknown>";
 
-			if (EnumProcessModules(hProcess, &hMod, sizeof(hMod), &cbNeeded))
+			if (EnumProcessModules(hProcess, &hModule, sizeof(hModule), &cbNeeded))
 			{
-				GetModuleBaseName(hProcess, hMod, szProcessName, sizeof(szProcessName) / sizeof(TCHAR));
+				GetModuleBaseName(hProcess, hModule, szProcessName, sizeof(szProcessName) / sizeof(TCHAR));
 			}
 
+			//QueryFullProcessImageName(hProcess, 0, szProcessName, &size);
 
+			handle.iNamePool = _pNamePool.Push(szProcessName, _tcslen(szProcessName));
+			CloseHandle(hProcess);
 		}
+
+		_handleList.push_back(handle);
 	}
+
+	return _handleList.size();
+}
+
+bool ProcessListManager::TryOpen(DWORD index)
+{
+	if (_openProcess != nullptr)
+	{
+		return false;
+	}
+
+	_openProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, _handleList[index].pid);
+
+	return (_openProcess != nullptr);
+}
+
+bool ProcessListManager::TryClose()
+{
+	if (!CloseHandle(_openProcess))
+	{
+		return false;
+	}
+
+	_openProcess = nullptr;
+	return true;
+}
+
+bool ProcessListManager::TryGetOpenProcess(HANDLE* hProcessPtr) const
+{
+	if (_openProcess == nullptr)
+	{
+		return false;
+	}
+
+	*hProcessPtr = _openProcess;
+	return true;
+}
+
+DWORD ProcessListManager::GetPid(DWORD index) const
+{
+	return _handleList[index].pid;
+}
+
+DWORD ProcessListManager::GetProcessCount() const
+{
+	return _handleList.size();
+}
+
+LPCWSTR ProcessListManager::GetProcessName(DWORD index) const
+{
+	if (_handleList[index].iNamePool == -1)
+	{
+		return L"<unknown>";
+	}
+
+	LPCWSTR name;
+	DWORD i = _handleList[index].iNamePool;
+	DWORD length = _pNamePool.TrySearch(&name, i);
+
+	return name;
 }
