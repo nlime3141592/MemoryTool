@@ -33,7 +33,7 @@ DWORD StringPool::Push(LPCWSTR src, DWORD size)
 {
 	DWORD index = _rawDataCount;
 
-	if (_rawDataCount + size + 1 >= _rawDataCapacity)
+	if (_rawDataCount + size + 2 >= _rawDataCapacity)
 	{
 		DWORD nextCapacity = _rawDataCapacity * 2;
 
@@ -44,6 +44,8 @@ DWORD StringPool::Push(LPCWSTR src, DWORD size)
 	_rawDataPool[index] = (WCHAR)size;
 	memcpy(_rawDataPool + index + 1, src, size * sizeof(WCHAR));
 	_rawDataCount += size + 1;
+	_rawDataPool[_rawDataCount] = '\0';
+	_rawDataCount += 1;
 
 	if (_offsetCount >= _offsetCapacity)
 	{
@@ -59,7 +61,7 @@ DWORD StringPool::Push(LPCWSTR src, DWORD size)
 	return index;
 }
 
-DWORD StringPool::TrySearch(LPWSTR dst, DWORD index)
+DWORD StringPool::TrySearch(LPCWSTR* dst, DWORD index) const
 {
 	DWORD i = 0;
 	DWORD j = _offsetCount - 1;
@@ -78,14 +80,15 @@ DWORD StringPool::TrySearch(LPWSTR dst, DWORD index)
 			r = 1;
 	}
 
+	LPCWSTR result = nullptr;
+
 	if (r != 0)
 	{
 		r = (DWORD)_rawDataPool[index];
-		memcpy(dst, &_rawDataPool[index + 1], r * sizeof(WCHAR));
+		result = _rawDataPool + index + 1;
 	}
 
-	dst[r] = 0;
-
+	*dst = result;
 	return r;
 }
 

@@ -11,7 +11,7 @@ public:
 
 	void Clear();
 	DWORD Push(LPCWSTR src, DWORD size);
-	DWORD TrySearch(LPWSTR dst, DWORD index);
+	DWORD TrySearch(LPCWSTR* dst, DWORD index) const;
 
 private:
 	DWORD _rawDataCount;
