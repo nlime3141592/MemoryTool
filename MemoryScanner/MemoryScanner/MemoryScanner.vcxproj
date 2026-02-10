@@ -128,6 +128,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="memreader.h" />
+    <ClInclude Include="memtool.h" />
     <ClInclude Include="memmanipulator.h" />
     <ClInclude Include="MemoryScanner.h" />
     <ClInclude Include="memscanner.h" />
@@ -142,7 +144,9 @@
   <ItemGroup>
     <ClCompile Include="memmanipulator.cpp" />
     <ClCompile Include="MemoryScanner.cpp" />
+    <ClCompile Include="memreader.cpp" />
     <ClCompile Include="memscanner.cpp" />
+    <ClCompile Include="memtool.cpp" />
     <ClCompile Include="pshandle.cpp" />
     <ClCompile Include="scan.cpp" />
     <ClCompile Include="ScanUI.cpp" />

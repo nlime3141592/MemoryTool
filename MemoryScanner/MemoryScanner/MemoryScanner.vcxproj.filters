@@ -25,6 +25,21 @@
     <Filter Include="소스 파일\Util">
       <UniqueIdentifier>{a04fad97-0394-4ba3-ad99-28389e4f142c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Event">
+      <UniqueIdentifier>{abecdecd-f9fe-4919-8a01-325a1837e866}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Memory">
+      <UniqueIdentifier>{2485c09b-3db1-4f62-81ff-9d6bbbbee8ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Process">
+      <UniqueIdentifier>{ee2b0be1-834f-47de-a726-cf083f5e38da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Memory">
+      <UniqueIdentifier>{9f7306e3-f5e8-423d-934e-4853f6ffe617}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Process">
+      <UniqueIdentifier>{e5abdbad-5c2e-4a76-bdbd-4d8d50adf2d4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -48,17 +63,23 @@
     <ClInclude Include="scan.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="memscanner.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="memmanipulator.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="memscanner.h">
+      <Filter>헤더 파일\Memory</Filter>
     </ClInclude>
     <ClInclude Include="pshandle.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Process</Filter>
     </ClInclude>
     <ClInclude Include="stringpool.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="memtool.h">
+      <Filter>헤더 파일\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="memreader.h">
+      <Filter>헤더 파일\Memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -74,17 +95,23 @@
     <ClCompile Include="scan.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="memscanner.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="memmanipulator.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="memscanner.cpp">
+      <Filter>소스 파일\Memory</Filter>
     </ClCompile>
     <ClCompile Include="pshandle.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\Process</Filter>
     </ClCompile>
     <ClCompile Include="stringpool.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="memtool.cpp">
+      <Filter>소스 파일\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="memreader.cpp">
+      <Filter>소스 파일\Memory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
